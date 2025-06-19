@@ -1,0 +1,14 @@
+  - name: Build user-service
+      run: docker build -t ${{ secrets.ECR_USER_SVC }} ./user-service
+
+    - name: Build note-service
+      run: docker build -t ${{ secrets.ECR_NOTE_SVC }} ./note-service
+
+    - name: Build api-gateway
+      run: docker build -t ${{ secrets.ECR_GATEWAY }} ./api-gateway
+
+    - name: Push all images to ECR
+      run: |
+        docker push ${{ secrets.ECR_USER_SVC }}
+        docker push ${{ secrets.ECR_NOTE_SVC }}
+        docker push ${{ secrets.ECR_GATEWAY }}

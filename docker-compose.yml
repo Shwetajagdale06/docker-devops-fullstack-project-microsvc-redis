@@ -1,0 +1,58 @@
+version: '3.8'
+
+services:
+  api-gateway:
+    build: ./api-gateway
+    ports:
+      - "8000:8000"
+    depends_on:
+      - user-service
+      - note-service
+    networks:
+      - micro-net
+
+  user-service:
+    build: ./user-service
+    ports:
+      - "8001:8001"
+    networks:
+      - micro-net
+    depends_on:
+      - db
+      - redis
+
+  note-service:
+    build: ./note-service
+    ports:
+      - "8002:8002"
+    networks:
+      - micro-net
+    depends_on:
+      - db
+      - redis
+
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "5432:5432"
+    networks:
+      - micro-net
+
+  redis:
+    image: redis:alpine
+    ports:
+      - "6379:6379"
+    networks:
+      - micro-net
+
+volumes:
+  pgdata:
+
+networks:
+  micro-net:
