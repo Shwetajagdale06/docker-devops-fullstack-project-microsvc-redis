@@ -33,7 +33,7 @@ jobs:
       run: docker build -t ${{ secrets.ECR_NOTE_SVC }} ./note-service
 
     - name: Build api-gateway image
-      run: docker build -t ${{ secrets.ECR_GATEWAY }} ./api-gateway
+      run: docker build -t ${{ secrets.ECR_GATEWAY }} ./api-getway
 
     - name: Push all images to ECR
       run: |
