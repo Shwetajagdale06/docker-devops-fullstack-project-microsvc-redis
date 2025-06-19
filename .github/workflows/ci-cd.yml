@@ -48,8 +48,7 @@ jobs:
         username: ubuntu
         key: ${{ secrets.EC2_SSH_KEY }}
         script: |
-          docker login -u AWS -p $(aws ecr get-login-password --region ap-south-1) <your_aws_account_id>.dkr.ecr.ap-south-1.amazonaws.com
-          
+          docker login --username AWS --password-stdin 195275640451.dkr.ecr.ap-south-1.amazonaws.com
           docker pull ${{ secrets.ECR_USER_SVC }}
           docker pull ${{ secrets.ECR_NOTE_SVC }}
           docker pull ${{ secrets.ECR_GATEWAY }}
