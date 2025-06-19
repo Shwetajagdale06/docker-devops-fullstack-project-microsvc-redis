@@ -1,10 +1,39 @@
-  - name: Build user-service
+name: CI/CD Pipeline for Microservices
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout source code
+      uses: actions/checkout@v3
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v2
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ap-south-1
+
+    - name: Login to Amazon ECR
+      run: |
+        aws ecr get-login-password --region ap-south-1 | docker login --username AWS --password-stdin <your_aws_account_id>.dkr.ecr.ap-south-1.amazonaws.com
+
+    - name: Build user-service image
       run: docker build -t ${{ secrets.ECR_USER_SVC }} ./user-service
 
-    - name: Build note-service
+    - name: Build note-service image
       run: docker build -t ${{ secrets.ECR_NOTE_SVC }} ./note-service
 
-    - name: Build api-gateway
+    - name: Build api-gateway image
       run: docker build -t ${{ secrets.ECR_GATEWAY }} ./api-gateway
 
     - name: Push all images to ECR
@@ -12,3 +41,24 @@
         docker push ${{ secrets.ECR_USER_SVC }}
         docker push ${{ secrets.ECR_NOTE_SVC }}
         docker push ${{ secrets.ECR_GATEWAY }}
+
+    - name: Deploy to EC2 via SSH
+      uses: appleboy/ssh-action@v1.0.3
+      with:
+        host: ${{ secrets.EC2_HOST }}
+        username: ubuntu
+        key: ${{ secrets.EC2_SSH_KEY }}
+        script: |
+          docker login -u AWS -p $(aws ecr get-login-password --region ap-south-1) <your_aws_account_id>.dkr.ecr.ap-south-1.amazonaws.com
+          
+          docker pull ${{ secrets.ECR_USER_SVC }}
+          docker pull ${{ secrets.ECR_NOTE_SVC }}
+          docker pull ${{ secrets.ECR_GATEWAY }}
+
+          docker stop user-service || true && docker rm user-service || true
+          docker stop note-service || true && docker rm note-service || true
+          docker stop api-gateway || true && docker rm api-gateway || true
+
+          docker run -d --name user-service -p 8001:8001 ${{ secrets.ECR_USER_SVC }}
+          docker run -d --name note-service -p 8002:8002 ${{ secrets.ECR_NOTE_SVC }}
+          docker run -d --name api-gateway -p 8000:8000 ${{ secrets.ECR_GATEWAY }}
